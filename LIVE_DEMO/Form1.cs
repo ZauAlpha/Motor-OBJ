@@ -16,6 +16,7 @@ namespace LIVE_DEMO
     public partial class MAIN_FORM : Form
     {
         Rasterization raster;
+        Random random;
         public MAIN_FORM()
         {
             InitializeComponent();
@@ -51,6 +52,7 @@ namespace LIVE_DEMO
         private void MAIN_FORM_Load(object sender, EventArgs e)
         {
             Init();
+            random = new Random();
         }
 
       
@@ -145,7 +147,7 @@ namespace LIVE_DEMO
                             {
                                 indexes.Add(int.Parse(aux[i].Split('/')[0])-1);
                             }
-                            Triangle triangle = new Triangle(indexes[0], indexes[1], indexes[2], Color.Gray);
+                            Triangle triangle = new Triangle(indexes[0], indexes[1], indexes[2], Color.FromArgb(random.Next(255),random.Next(255),random.Next(255),random.Next(255)));
                             triangles.Add(triangle);
                             
                         }
@@ -176,8 +178,10 @@ namespace LIVE_DEMO
             }
             Console.Write(" ]");
         }
-        
 
-        
+        private void button1_Click(object sender, EventArgs e)
+        {
+            raster.ShowZBuffer();
+        }
     }
 }

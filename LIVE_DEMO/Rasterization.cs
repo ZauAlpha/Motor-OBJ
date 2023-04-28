@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using System.Xml.Schema;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using System.Drawing.Drawing2D;
 
 namespace LIVE_DEMO
 {
@@ -24,6 +25,7 @@ namespace LIVE_DEMO
         int pixelFormatSize, stride;
         public byte[] bits;
         public float[,] zbuffer;
+       
         Model cube;
         Camera camera   = new Camera(new Vertex(0,0, 2), Mtx.RotY(0));
        // float s2        = (float)Math.Sqrt(2);
@@ -96,6 +98,7 @@ namespace LIVE_DEMO
             canvas_height = canvas.Height;
             stride = canvas_width * pixelFormatSize;
             padding = (stride % 4);
+            
             stride += padding == 0 ? 0 : 4 - padding; //4 byte multiple Alpha, Red, Green, Blue
             bits = new byte[stride * canvas_height]; //Total pixels (width) times ARGB (4) times height
             handle = GCHandle.Alloc(bits, GCHandleType.Pinned);
@@ -107,7 +110,7 @@ namespace LIVE_DEMO
             {
                 for (int j = 0 ;j< size.Height; j++)
                 {
-                    zbuffer[i,j] = 0.0f;  
+                    zbuffer[i,j] = float.MaxValue;  
                 }
             }
             models = new List<Model>();
@@ -183,6 +186,7 @@ namespace LIVE_DEMO
         public void Render()
         {
             FastClear();
+            ClearZBuffer();
             RenderScene(camera, instances.ToArray());
             
         }
@@ -196,13 +200,33 @@ namespace LIVE_DEMO
 
             if (x < 0 || x >= canvas_width || y < 0 || y >= canvas_height)
                 return;
-            
+           
                 setPixel(x, y, color);
                 
             
+            
+                
+            
+        }
+        private void PutPixelBuffer(int x, int y, float z, Color color)
+        {
+
+            x = canvas_width / 2 + x;
+            y = canvas_height / 2 - y - 1;
+
+            if (x < 0 || x >= canvas_width || y < 0 || y >= canvas_height)
+                return;
+            if (z < zbuffer[(int)x, y])
+            {
+                setPixel(x, y, color);
+                zbuffer[(int)x, y] = z;
+            }
+
+
+
         }
 
-         List<float> Interpolate(float i0, float d0, float i1, float d1)
+        List<float> Interpolate(float i0, float d0, float i1, float d1)
         {
             List<float> values = new List<float>();
             if (i0 == i1)
@@ -216,10 +240,6 @@ namespace LIVE_DEMO
             {
                 values.Add(d);
                 d = d + a;
-            }
-            if(values.Count== 0)
-            {
-                Console.WriteLine("a");
             }
             return values;
         }
@@ -277,10 +297,11 @@ namespace LIVE_DEMO
         {
             if (BackfaceCulling(p0, p1, p2, camera))
             {
-                //DrawLine(p0, p1, Color.Black);
-                //DrawLine(p1, p2, Color.White);
-                //DrawLine(p0, p2, Color.Gray);
+
                 //FillTriangle(p0, p1, p2, color);
+                //DrawLine(p0, p1, Color.Black);
+                //DrawLine(p1, p2, Color.Black);
+                //DrawLine(p0, p2, Color.Black);
                 DrawShadowTriangle(p0, p1, p2, color);
             }
 
@@ -386,8 +407,11 @@ namespace LIVE_DEMO
         public void DrawShadowTriangle(Vertex a, Vertex b, Vertex d, Color c)
         {
             Point p0 = new Point((int)a.x, (int)a.y);
+            int z0 = (int)a.Z;
             Point p1 = new Point((int)b.x, (int)b.y);
+            int z1 = (int)b.Z;
             Point p2 = new Point((int)d.x, (int)d.y);
+            int z2 = (int)d.Z;
             if (p1.Y < p0.Y)
             {
                 Point p = p0;
@@ -407,13 +431,13 @@ namespace LIVE_DEMO
                 p1 = p;
             }
             List<float> x01 = Interpolate(p0.Y, p0.X, p1.Y, p1.X);
-            List<float> h01 = Interpolate(p0.Y, 1, p1.Y, 1);
+            List<float> h01 = Interpolate(p0.Y, z0, p1.Y, z1);
 
             List<float> x12 = Interpolate(p1.Y, p1.X, p2.Y, p2.X);
-            List<float> h12 = Interpolate(p1.Y, 1, p2.Y, 1);
+            List<float> h12 = Interpolate(p1.Y, z1, p2.Y, z2);
 
             List<float> x02 = Interpolate(p0.Y, p0.X, p2.Y, p2.X);
-            List<float> h02 = Interpolate(p0.Y, 1, p2.Y, 1);
+            List<float> h02 = Interpolate(p0.Y, z0, p2.Y, z2);
             List<float> x012 = new List<float>();
             List<float> h012 = new List<float>();
             x01.RemoveAt(x01.Count - 1);
@@ -452,10 +476,9 @@ namespace LIVE_DEMO
                         int auxIndex = (int)Math.Round(x - x_l);
                         if(auxIndex>=0 && auxIndex < h_segment.Count)
                         {
-                            int o = (int)h_segment[auxIndex];
-                            Color shadow = Color.FromArgb(c.A * o, c.R * o, c.G * o, c.B * o);
+                            int z = (int)h_segment[auxIndex];
+                            PutPixelBuffer((int)x, y, z, c);
 
-                            PutPixel((int)x, y, 0, shadow);
                         }
                     }
                 }
@@ -552,6 +575,27 @@ namespace LIVE_DEMO
             for (int i = 0; i < model.triangles.Length; i++)
             {
                 RenderTriangle(model.triangles[i], projected,camera);
+            }
+        }
+        public void ShowZBuffer()
+        {
+            for (int i = 0; i < zbuffer.GetLength(0); i++)
+            {
+                for (int j = 0; j < zbuffer.GetLength(1); j++)
+                {
+                    Console.Write(zbuffer[i, j] + "\t");
+                }
+                Console.WriteLine();
+            }
+        }
+        public void ClearZBuffer()
+        {
+            for (int i = 0; i < zbuffer.GetLength(0); i++)
+            {
+                for (int j = 0; j < zbuffer.GetLength(1); j++)
+                {
+                    zbuffer[i, j] = float.MaxValue;
+                }
             }
         }
 
