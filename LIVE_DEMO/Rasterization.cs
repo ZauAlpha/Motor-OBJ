@@ -298,7 +298,7 @@ namespace LIVE_DEMO
             if (BackfaceCulling(p0, p1, p2, camera))
             {
 
-                //FillTriangle(p0, p1, p2, color);
+                
                 //DrawLine(p0, p1, Color.Black);
                 //DrawLine(p1, p2, Color.Black);
                 //DrawLine(p0, p2, Color.Black);
