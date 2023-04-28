@@ -44,9 +44,8 @@ namespace LIVE_DEMO
             if (raster == null)
                 return;
             raster.Render();
-            //raster.Rotate(0.1f);
-            //raster.Translate(new Vertex(0.1f,0, 0.1f));
             PCT_CANVAS.Invalidate();
+
         }
 
         private void MAIN_FORM_Load(object sender, EventArgs e)
@@ -70,6 +69,7 @@ namespace LIVE_DEMO
             float y = float.Parse(translationY.Text);
             float z = float.Parse(translationZ.Text);
             raster.Translate(new Vertex(x, y, z));
+            
         }
 
         private void Scale_Click(object sender, EventArgs e)
@@ -78,6 +78,7 @@ namespace LIVE_DEMO
                 return;
             float scale = float.Parse(scalation.Text);
             raster.Scales(scale);
+            
         }
         private String formatTranslation(String text)
         {
@@ -109,6 +110,7 @@ namespace LIVE_DEMO
 
             raster.Rotate(new Vertex(x, y, z));
             
+
         }
 
         private void openFile_Click(object sender, EventArgs e)
@@ -133,7 +135,7 @@ namespace LIVE_DEMO
                             float z = float.Parse(tokens[3]);
                             Vertex ver = new Vertex(x, y, z);
                             vertexes.Add(ver);
-                            Console.WriteLine("Vertex " + ver);
+                            
                         }
                         else if (line.StartsWith("f "))
                         {
@@ -143,10 +145,8 @@ namespace LIVE_DEMO
                             {
                                 indexes.Add(int.Parse(aux[i].Split('/')[0])-1);
                             }
-                            Triangle triangle = new Triangle(indexes[0], indexes[1], indexes[2], Color.White);
+                            Triangle triangle = new Triangle(indexes[0], indexes[1], indexes[2], Color.Gray);
                             triangles.Add(triangle);
-                            Console.WriteLine(triangle);
-                            //PrintArray(aux);
                             
                         }
                     }
@@ -160,11 +160,6 @@ namespace LIVE_DEMO
                 {
                     raster.AddModel(vertexes, triangles);
                 }
-                
-
-
-                
-                
             }
         }
         public static void PrintArray(string[] array)
@@ -181,8 +176,8 @@ namespace LIVE_DEMO
             }
             Console.Write(" ]");
         }
-
         
 
+        
     }
 }

@@ -7,19 +7,23 @@ using System.Drawing.Imaging;
 using System.Threading.Tasks;
 using System.Xml.Schema;
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 
 namespace LIVE_DEMO
 {
     public class Rasterization
     {
         // Scene setup.
-        float viewport_size         = 1;
-        float projection_plane_z    = 1;
+        float viewport_size = 1;
+        float projection_plane_z = 1;
         Bitmap canvas;
         Graphics canvas_context;
         int canvas_width;
         int canvas_height;
         List<Model> models;
+        int pixelFormatSize, stride;
+        public byte[] bits;
+        public float[,] zbuffer;
         Model cube;
         Camera camera   = new Camera(new Vertex(0,0, 2), Mtx.RotY(0));
        // float s2        = (float)Math.Sqrt(2);
@@ -80,18 +84,39 @@ namespace LIVE_DEMO
         }
         private void Init(Size size)
         {
+            PixelFormat format;
+            GCHandle handle; //puntero
+            IntPtr bitPtr; // puntero the two previous pointers are to protect the images and the bits from being deleted
+            format = PixelFormat.Format32bppArgb;
+            int padding;
+            pixelFormatSize = Image.GetPixelFormatSize(format) / 8;
             canvas = new Bitmap(size.Width, size.Height);
-            canvas_context = Graphics.FromImage(canvas);
+            zbuffer= new float[size.Width,size.Height];
             canvas_width = canvas.Width;
             canvas_height = canvas.Height;
+            stride = canvas_width * pixelFormatSize;
+            padding = (stride % 4);
+            stride += padding == 0 ? 0 : 4 - padding; //4 byte multiple Alpha, Red, Green, Blue
+            bits = new byte[stride * canvas_height]; //Total pixels (width) times ARGB (4) times height
+            handle = GCHandle.Alloc(bits, GCHandleType.Pinned);
+            bitPtr = Marshal.UnsafeAddrOfPinnedArrayElement(bits, 0);
+            canvas = new Bitmap(canvas_width, canvas_height, stride, format, bitPtr);
+
+            canvas_context = Graphics.FromImage(canvas);
+            for (int i = 0 ; i < size.Width; i++)
+            {
+                for (int j = 0 ;j< size.Height; j++)
+                {
+                    zbuffer[i,j] = 0.0f;  
+                }
+            }
             models = new List<Model>();
             models.Add(new Model(vertices, triangulos, new Vertex(0, 0, 0), (float)Math.Sqrt(3)));
             
             instances = new List<Instance> {
-                // new Instance(cube, new Vertex( -1.25f,    0,    7 ), Mtx.Identity, 0.75f),
-                // new Instance(cube, new Vertex(  0f, 0f, 7.5f ), Mtx.RotZ(45),0.5f),
                  new Instance(models[0], new Vertex(     0,     0, 7.5f ), Mtx.RotY(0))};
-        
+       
+
             // here is not implemented the FOV in the view only the planes at that angle
             // to implement the FOV in the canvas we need to create also that matrix
             // of the camera with that same angle
@@ -163,35 +188,39 @@ namespace LIVE_DEMO
         }
 
         // The PutPixel() function.
-        private void PutPixel(int x, int y, Color color)
+        private void PutPixel(int x, int y, float z, Color color)
         {
+            
             x = canvas_width / 2 + x;
             y = canvas_height / 2 - y - 1;
 
             if (x < 0 || x >= canvas_width || y < 0 || y >= canvas_height)
-            {
                 return;
-            }
-
-            canvas.SetPixel(x, y, color);
+            
+                setPixel(x, y, color);
+                
+            
         }
 
-        List<float> Interpolate(int i0, float d0, int i1, float d1)
+         List<float> Interpolate(float i0, float d0, float i1, float d1)
         {
+            List<float> values = new List<float>();
             if (i0 == i1)
             {
-                return new List<float> { d0 };
+                values.Add(d0);
+                return values;
             }
-
-            List<float> values = new List<float>();
-            float a = (d1 - d0) / (i1 - i0);
+            float a = ((float)d1 - (float)d0) / ((float)i1 - (float)i0);
             float d = d0;
-            for (var i = i0; i <= i1; i++)
+            for (int i = (int)i0; i <= i1; i++)
             {
                 values.Add(d);
-                d += a;
+                d = d + a;
             }
-
+            if(values.Count== 0)
+            {
+                Console.WriteLine("a");
+            }
             return values;
         }
 
@@ -201,9 +230,12 @@ namespace LIVE_DEMO
             a = b;
             b = temp;
         }
+       
+        
 
         void DrawLine(Vertex p0, Vertex p1, Color color)
         {
+            
             var dx = p1.x - p0.x;
             var dy = p1.y - p0.y;
 
@@ -219,7 +251,7 @@ namespace LIVE_DEMO
                 var ys = Interpolate((int)p0.x, p0.y, (int)p1.x, p1.y);
                 for (var x = (int)p0.x; x <= p1.x; x++)
                 {
-                    PutPixel(x, (int)ys[(x - (int)p0.x)], color);
+                    PutPixel(x, (int)ys[(x - (int)p0.x)],0.0f, color);
                 }
             }
             else
@@ -232,42 +264,207 @@ namespace LIVE_DEMO
 
                 // Compute the X values and draw.
                 var xs = Interpolate((int)p0.y, p0.x, (int)p1.y, p1.x);
+                
                 for (var y = (int)p0.y; y <= p1.y; y++)
                 {
-                    PutPixel((int)xs[(y - (int)p0.y)], y, color);
+                    PutPixel((int)xs[(y - (int)p0.y)], y,0.0f, color);
                 }
             }
         }
 
 
-        void DrawWireframeTriangle(Vertex p0, Vertex p1, Vertex p2, Color color)
+        void DrawTriangle(Vertex p0, Vertex p1, Vertex p2, Color color, Camera camera)
         {
-            DrawLine(p0, p1, color);
-            DrawLine(p1, p2, color);
-            DrawLine(p0, p2, color);
+            if (BackfaceCulling(p0, p1, p2, camera))
+            {
+                //DrawLine(p0, p1, Color.Black);
+                //DrawLine(p1, p2, Color.White);
+                //DrawLine(p0, p2, Color.Gray);
+                //FillTriangle(p0, p1, p2, color);
+                DrawShadowTriangle(p0, p1, p2, color);
+            }
+
         }
+        //create a method that uses backfacing culling to determine if a triangle is visible
+        bool BackfaceCulling(Vertex p0, Vertex p1, Vertex p2, Camera camera)
+        {
+            Vertex v0 = new Vertex(p1.x - p0.x, p1.y - p0.y, p1.z - p0.z);
+            Vertex v1 = new Vertex(p2.x - p0.x, p2.y - p0.y, p2.z - p0.z);
+            Vertex normal = Vertex.Cross(v0, v1);
+            Vertex cameraVector = camera.position - p0;
+            float dot = Vertex.Dot(normal, cameraVector);
+            if (dot < 0)
+                return true;
+            return false;
+
+        }
+
 
         // Converts 2D viewport coordinates to 2D canvas coordinates.
         Vertex ViewportToCanvas(Vertex p2d)
         {
             float vW = (float)canvas.Width / canvas.Height;
-            return new Vertex((p2d.x * canvas.Width / vW), (p2d.y * canvas.Height / viewport_size), 0);
+            return new Vertex((p2d.x * canvas.Width / vW), (p2d.y * canvas.Height / viewport_size), p2d.z);
         }
 
         Vertex ProjectVertex(Vertex v)
         {
-            return ViewportToCanvas(new Vertex(v.x * projection_plane_z / v.z, v.y * projection_plane_z / v.z, 0));
+            Vertex p = new Vertex(v.x * projection_plane_z / v.z, v.y * projection_plane_z / v.z, v.z);
+            
+            return ViewportToCanvas(p);
         }
 
-        void RenderTriangle(Triangle triangle, List<Vertex> projected)
+        void RenderTriangle(Triangle triangle, List<Vertex> projected, Camera camera)
         {
-            DrawWireframeTriangle(projected[triangle.v0], projected[triangle.v1], projected[triangle.v2], triangle.color);
+            DrawTriangle(projected[triangle.v0], projected[triangle.v1], projected[triangle.v2], triangle.color, camera);
             
 
         }
+        public void FillTriangle(Vertex p0, Vertex p1, Vertex p2, Color c)
+        {
+            List<float> x_left;
+            List<float> x_right;
 
-        // Clips a triangle against a plane. Adds output to triangles and vertices.
-        private List<Triangle> ClipTriangle(Triangle triangle, Plane plane, List<Triangle> triangles, List<Vertex> vertexes)
+            if (p1.Y < p0.Y)
+            {
+                Vertex p = p0;
+                p0 = p1;
+                p1 = p;
+            }
+            if (p2.Y < p0.Y)
+            {
+                Vertex p = p0;
+                p0 = p2;
+                p2 = p;
+            }
+            if (p2.Y < p1.Y)
+            {
+                Vertex p = p2;
+                p2 = p1;
+                p1 = p;
+            }
+
+            List<float> x01 = Interpolate(p0.Y, p0.X, p1.Y, p1.X);
+            List<float> x12 = Interpolate(p1.Y, p1.X, p2.Y, p2.X);
+            List<float> x02 = Interpolate(p0.Y, p0.X, p2.Y, p2.X);
+
+            //x01.RemoveAt(x01.Count - 1);
+            List<float> x012 = new List<float>();
+            x01.RemoveAt(x01.Count - 1);
+            x012.AddRange(x01);
+            x012.AddRange(x12);
+
+            int m = x02.Count / 2;
+            if (m >= 0 && m < x02.Count && m < x012.Count)
+            {
+                if (x02[m] < x012[m])
+                {
+                    x_left = x02;
+                    x_right = x012;
+                }
+                else
+                {
+                    x_left = x012;
+                    x_right = x02;
+                }
+
+                for (var y = (int)p0.Y; y < p2.Y; y++)
+                {
+                    int index = y - (int)p0.Y;
+                    if (index >= 0 && index < x_left.Count && index < x_right.Count)
+                    {
+                        for (var x = x_left[index]; x < x_right[index]; x++)
+                        {
+                            PutPixel((int)x, y,0, c);
+                        }
+                    }
+                }
+            }
+        }
+       
+
+        public void DrawShadowTriangle(Vertex a, Vertex b, Vertex d, Color c)
+        {
+            Point p0 = new Point((int)a.x, (int)a.y);
+            Point p1 = new Point((int)b.x, (int)b.y);
+            Point p2 = new Point((int)d.x, (int)d.y);
+            if (p1.Y < p0.Y)
+            {
+                Point p = p0;
+                p0 = p1;
+                p1 = p;
+            }
+            if (p2.Y < p0.Y)
+            {
+                Point p = p0;
+                p0 = p2;
+                p2 = p;
+            }
+            if (p2.Y < p1.Y)
+            {
+                Point p = p2;
+                p2 = p1;
+                p1 = p;
+            }
+            List<float> x01 = Interpolate(p0.Y, p0.X, p1.Y, p1.X);
+            List<float> h01 = Interpolate(p0.Y, 1, p1.Y, 1);
+
+            List<float> x12 = Interpolate(p1.Y, p1.X, p2.Y, p2.X);
+            List<float> h12 = Interpolate(p1.Y, 1, p2.Y, 1);
+
+            List<float> x02 = Interpolate(p0.Y, p0.X, p2.Y, p2.X);
+            List<float> h02 = Interpolate(p0.Y, 1, p2.Y, 1);
+            List<float> x012 = new List<float>();
+            List<float> h012 = new List<float>();
+            x01.RemoveAt(x01.Count - 1);
+            h01.RemoveAt(h01.Count - 1);
+            x012.AddRange(x01);
+            x012.AddRange(x12);
+            h012.AddRange(h01);
+            h012.AddRange(h12);
+            int m = x02.Count / 2;
+            if (m >= 0 && m < x02.Count && m < x012.Count)
+            {
+                List<float> x_left, x_right, h_left, h_right;
+                if (x02[m] < x012[m])
+                {
+                    x_left = x02;
+                    h_left = h02;
+
+                    x_right = x012;
+                    h_right = h012;
+                }
+                else
+                {
+                    x_left = x012;
+                    h_left = h012;
+
+                    x_right = x02;
+                    h_right = h02;
+                }
+                for (int y = p0.Y; y <p2.Y; y++)
+                {
+                    int index = y - p0.Y;
+                    float x_l = x_left[index];
+                    float x_r = x_right[index];
+                    List<float> h_segment = Interpolate(x_l, h_left[index], x_r, h_right[index]);
+                    for (float x = x_l; x <= x_r; x++) { 
+                        int auxIndex = (int)Math.Round(x - x_l);
+                        if(auxIndex>=0 && auxIndex < h_segment.Count)
+                        {
+                            int o = (int)h_segment[auxIndex];
+                            Color shadow = Color.FromArgb(c.A * o, c.R * o, c.G * o, c.B * o);
+
+                            PutPixel((int)x, y, 0, shadow);
+                        }
+                    }
+                }
+
+            }
+        }
+
+            // Clips a triangle against a plane. Adds output to triangles and vertices.
+            private List<Triangle> ClipTriangle(Triangle triangle, Plane plane, List<Triangle> triangles, List<Vertex> vertexes)
         {
             
             Vertex v0 = vertexes[triangle.v0];
@@ -354,7 +551,7 @@ namespace LIVE_DEMO
 
             for (int i = 0; i < model.triangles.Length; i++)
             {
-                RenderTriangle(model.triangles[i], projected);
+                RenderTriangle(model.triangles[i], projected,camera);
             }
         }
 
@@ -424,5 +621,24 @@ namespace LIVE_DEMO
                 instances[i].transform *= Mtx.MakeTranslationMatrix(translation);
             }
         }
+        public void Inverse(List<float> numbers)
+        {
+            for (int i =0; i < numbers.Count; i++)
+            {
+                numbers[i] = 1.0f / numbers[i];
+            }
+        }
+        public void setPixel(int x, int y, Color c)
+        {
+            long res = (int)((x * pixelFormatSize) + (y * stride));
+
+            bits[res + 0] = c.B;// (byte)Blue;
+            bits[res + 1] = c.G;// (byte)Green;
+            bits[res + 2] = c.R;// (byte)Red;
+            bits[res + 3] = c.A;// (byte)Alpha;
+            
+        }
+
+        
     }
 }

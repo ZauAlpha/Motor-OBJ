@@ -14,18 +14,18 @@ namespace LIVE_DEMO
         public float w;
 
         private Color c;
-        
+
         public float A
         {
-            get { return c.A; }            
+            get { return c.A; }
         }
         public float R
         {
-            get { return c.R; }            
+            get { return c.R; }
         }
         public float G
         {
-            get { return c.G; }            
+            get { return c.G; }
         }
         public float B
         {
@@ -37,7 +37,7 @@ namespace LIVE_DEMO
             get { return c; }
             set
             {
-                c = value;         
+                c = value;
             }
         }
 
@@ -78,7 +78,7 @@ namespace LIVE_DEMO
         {
             return new Vertex(a.y * b.z - a.z * b.y, a.z * b.x - a.x * b.z, a.x * b.y - a.y * b.x);
         }
-               
+
         // Computes dot product.
         public static float operator *(Vertex v1, Vertex v2)
         {
@@ -98,6 +98,10 @@ namespace LIVE_DEMO
         public static Vertex operator -(Vertex v)
         {
             return new Vertex(-v.X, -v.Y, -v.Z);
+        } 
+        public static float Dot(Vertex v1, Vertex v2)
+        {
+            return v1.x*v2.x+v1.y*v2.y+v1.z*v2.z;
         }
         public static Vertex operator /(Vertex v1, float a)
         {

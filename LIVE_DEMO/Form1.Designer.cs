@@ -86,7 +86,7 @@
             // TIMER
             // 
             this.TIMER.Enabled = true;
-            this.TIMER.Interval = 50;
+            this.TIMER.Interval = 60;
             this.TIMER.Tick += new System.EventHandler(this.TIMER_Tick);
             // 
             // Translate
