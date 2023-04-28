@@ -147,7 +147,8 @@ namespace LIVE_DEMO
                             {
                                 indexes.Add(int.Parse(aux[i].Split('/')[0])-1);
                             }
-                            Triangle triangle = new Triangle(indexes[0], indexes[1], indexes[2], Color.FromArgb(random.Next(255),random.Next(255),random.Next(255),random.Next(255)));
+                            Triangle triangle = new Triangle(indexes[0], indexes[1], indexes[2],GetRandomColor());
+                            
                             triangles.Add(triangle);
                             
                         }
@@ -164,6 +165,38 @@ namespace LIVE_DEMO
                 }
             }
         }
+        
+        
+            
+
+            public Color GetRandomColor()
+            {
+            
+                 int randomNumber = random.Next(0, 8);
+
+                switch (randomNumber)
+                {
+                    case 0:
+                        return Color.Red;
+                    case 1:
+                        return Color.Green;
+                    case 2:
+                        return Color.Blue;
+                    case 3:
+                        return Color.Yellow;
+                    case 4:
+                        return Color.Magenta;
+                    case 5:
+                        return Color.Orange;
+                    case 6:
+                        return Color.Black;
+                    case 7:
+                        return Color.Brown;
+                    default:
+                        throw new InvalidOperationException("Unexpected random number.");
+                }
+            }
+        
         public static void PrintArray(string[] array)
         {
             Console.WriteLine();

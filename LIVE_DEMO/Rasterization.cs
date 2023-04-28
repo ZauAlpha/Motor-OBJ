@@ -218,6 +218,7 @@ namespace LIVE_DEMO
                 return;
             if (z < zbuffer[(int)x, y])
             {
+                //Console.WriteLine("zbuffer: " + zbuffer[(int)x, y] + " z: " + z);
                 setPixel(x, y, color);
                 zbuffer[(int)x, y] = z;
             }
@@ -298,12 +299,15 @@ namespace LIVE_DEMO
             if (BackfaceCulling(p0, p1, p2, camera))
             {
 
-                
-                //DrawLine(p0, p1, Color.Black);
+
+                DrawLine(p0, p1, Color.Black);
                 //DrawLine(p1, p2, Color.Black);
                 //DrawLine(p0, p2, Color.Black);
-                DrawShadowTriangle(p0, p1, p2, color);
+                DrawBufferTriangle(p0, p1, p2, color);
+
             }
+            //FillTriangle(p0, p1, p2, color);
+            
 
         }
         //create a method that uses backfacing culling to determine if a triangle is visible
@@ -404,7 +408,7 @@ namespace LIVE_DEMO
         }
        
 
-        public void DrawShadowTriangle(Vertex a, Vertex b, Vertex d, Color c)
+        public void DrawBufferTriangle(Vertex a, Vertex b, Vertex d, Color c)
         {
             Point p0 = new Point((int)a.x, (int)a.y);
             int z0 = (int)a.Z;
@@ -431,13 +435,22 @@ namespace LIVE_DEMO
                 p1 = p;
             }
             List<float> x01 = Interpolate(p0.Y, p0.X, p1.Y, p1.X);
-            List<float> h01 = Interpolate(p0.Y, z0, p1.Y, z1);
+            List<float> h01 = Interpolate(p0.Y, (float)1/z0, p1.Y, (float)1/z1);
+            
+            //Console.Write("1/z : ");
+            //PrintList(h01);
+            //Console.Write("z : ");
+            //PrintList(z01);
+            //Console.Write("inverse 1/z : ");
+            //Inverse(h01);
+            //PrintList(h01);
 
             List<float> x12 = Interpolate(p1.Y, p1.X, p2.Y, p2.X);
-            List<float> h12 = Interpolate(p1.Y, z1, p2.Y, z2);
-
+            List<float> h12 = Interpolate(p1.Y, (float)1/z1, p2.Y,(float)1/z2);
+            //Inverse(h12);
             List<float> x02 = Interpolate(p0.Y, p0.X, p2.Y, p2.X);
-            List<float> h02 = Interpolate(p0.Y, z0, p2.Y, z2);
+            List<float> h02 = Interpolate(p0.Y,  (float)1 / z0, p2.Y, (float)1/ z2);
+            //Inverse(h02);
             List<float> x012 = new List<float>();
             List<float> h012 = new List<float>();
             x01.RemoveAt(x01.Count - 1);
@@ -472,11 +485,12 @@ namespace LIVE_DEMO
                     float x_l = x_left[index];
                     float x_r = x_right[index];
                     List<float> h_segment = Interpolate(x_l, h_left[index], x_r, h_right[index]);
+                    Inverse(h_segment);
                     for (float x = x_l; x <= x_r; x++) { 
                         int auxIndex = (int)Math.Round(x - x_l);
                         if(auxIndex>=0 && auxIndex < h_segment.Count)
                         {
-                            int z = (int)h_segment[auxIndex];
+                            float z = h_segment[auxIndex];
                             PutPixelBuffer((int)x, y, z, c);
 
                         }
@@ -583,9 +597,13 @@ namespace LIVE_DEMO
             {
                 for (int j = 0; j < zbuffer.GetLength(1); j++)
                 {
-                    Console.Write(zbuffer[i, j] + "\t");
+                    if (zbuffer[i,j] != float.MaxValue)
+                     Console.Write(zbuffer[i, j] + "\t");
+                    else
+                    { Console.Write("\t");}
                 }
                 Console.WriteLine();
+                
             }
         }
         public void ClearZBuffer()
@@ -671,6 +689,15 @@ namespace LIVE_DEMO
             {
                 numbers[i] = 1.0f / numbers[i];
             }
+        }
+        public void PrintList(List<float> numbers)
+        {
+            String text = "";
+            for (int i = 0; i < numbers.Count; i++)
+            {
+               text+= numbers[i] + ", ";
+            }
+            Console.WriteLine(text);
         }
         public void setPixel(int x, int y, Color c)
         {
