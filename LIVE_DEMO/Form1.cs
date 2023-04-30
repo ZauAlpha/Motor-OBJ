@@ -17,6 +17,11 @@ namespace LIVE_DEMO
     {
         Rasterization raster;
         Random random;
+        bool rotate;
+        int modelIndex;
+        int transform;
+        bool animate;
+        
         public MAIN_FORM()
         {
             InitializeComponent();
@@ -24,7 +29,7 @@ namespace LIVE_DEMO
                     
         private void BTN_EXE_Click(object sender, EventArgs e)
         {
-            raster.Scales(0.5f);
+            animate = !animate;
         }
 
         private void Init()
@@ -34,18 +39,13 @@ namespace LIVE_DEMO
         }
 
 
-        private void PCT_CANVAS_SizeChanged(object sender, EventArgs e)
-        {
-            if(raster != null)
-                raster.Resize(PCT_CANVAS.Size);
-        }
-
         private void TIMER_Tick(object sender, EventArgs e)
         {
             if (raster == null)
                 return;
             raster.Render();
             PCT_CANVAS.Invalidate();
+            
 
         }
 
@@ -53,68 +53,13 @@ namespace LIVE_DEMO
         {
             Init();
             random = new Random();
-        }
-
-      
-
-        private void Translate_Click(object sender, EventArgs e)
-        {
-            if (raster == null)
-                return;
-            if (translationY.Text.Length == 0)
-                translationY.Text = "0";
-            if (translationX.Text.Length == 0)
-                translationX.Text = "0";
-            if (translationZ.Text.Length == 0)
-                translationZ.Text = "0";
-            float x = float.Parse(translationX.Text);
-            float y = float.Parse(translationY.Text);
-            float z = float.Parse(translationZ.Text);
-            raster.Translate(new Vertex(x, y, z));
-            
-        }
-
-        private void Scale_Click(object sender, EventArgs e)
-        {
-            if (raster == null)
-                return;
-            float scale = float.Parse(scalation.Text);
-            raster.Scales(scale);
-            
+            transform = 0;
+            animate = false;
         }
         private String formatTranslation(String text)
         {
             return new string(text.Where(c => char.IsDigit(c) || c == '.' || c == '-').ToArray());
         }
-
-        private void translationX_TextChanged(object sender, EventArgs e)
-        {
-            translationX.Text=formatTranslation(translationX.Text);
-        }
-
-        private void translationY_TextChanged(object sender, EventArgs e)
-        {
-            translationY.Text=formatTranslation(translationY.Text);
-        }
-
-        private void translationZ_TextChanged(object sender, EventArgs e)
-        {
-            translationZ.Text=formatTranslation(translationZ.Text);
-        }
-
-        private void Rotate_Click(object sender, EventArgs e)
-        {
-            if (raster == null)
-                return;
-            float x = (float)rotationXUpDown.Value;
-            float y = (float)rotationYUpDown.Value;
-            float z = (float)rotationZUpDown.Value;
-
-            raster.Rotate(new Vertex(x, y, z));
-            
-
-        }
-
         private void openFile_Click(object sender, EventArgs e)
         {
             if(openFileDialog1.ShowDialog() == DialogResult.OK)
@@ -158,18 +103,42 @@ namespace LIVE_DEMO
                 {
                     raster = new Rasterization(PCT_CANVAS.Size, vertexes, triangles);
                     PCT_CANVAS.Image = raster.Canvas;
+                    TreeNode node = new TreeNode(GetFileName(filePath));
+                    node.Tag = 0;
+                    modelIndex = 0;
+                    TREE.Nodes.Add(node);
                 }
                 else
                 {
-                    raster.AddModel(vertexes, triangles);
+                    TreeNode node = new TreeNode(GetFileName(filePath));
+                    node.Tag = raster.AddModel(vertexes, triangles);
+                    modelIndex = (int)node.Tag;
+                    TREE.Nodes.Add(node);
+                    
+                    
                 }
             }
         }
-        
-        
-            
 
-            public Color GetRandomColor()
+        public string GetFileName(string filePath)
+        {
+            int lastSlashIndex = filePath.LastIndexOf('\\');
+            int lastBackslashIndex = filePath.LastIndexOf('/');
+
+            int lastIndex = Math.Max(lastSlashIndex, lastBackslashIndex);
+
+            if (lastIndex == -1)
+            {
+                return filePath;
+            }
+            else
+            {
+                return filePath.Substring(lastIndex + 1);
+            }
+        }
+
+
+        public Color GetRandomColor()
             {
             
                  int randomNumber = random.Next(0, 8);
@@ -214,7 +183,128 @@ namespace LIVE_DEMO
 
         private void button1_Click(object sender, EventArgs e)
         {
-            raster.ShowZBuffer();
+            rotate = !rotate;
+        }
+
+        private void TREE_AfterSelect(object sender, TreeViewEventArgs e)
+        {
+            modelIndex = (int)TREE.SelectedNode.Tag;
+
+        }
+
+        private void trackBar1_Scroll(object sender, EventArgs e)
+        {
+            if(raster != null) {
+                Vertex t = new Vertex(TB_Trans_X.Value, TB_Trans_Y.Value, TB_Trans_Z.Value);
+                switch (transform)
+                {
+                    case 1:
+                        raster.Rotate(t, modelIndex);
+                        break;
+                    case 2:
+                        raster.Translate(t, modelIndex);
+                        break;
+                    case 3:
+                        float value = ((float)TB_Trans_X.Value) / 100;
+                        raster.Scales(value, modelIndex);
+                        Console.WriteLine("Escalado : " + value + " | "+TB_Trans_X.Value);
+                        break;
+                    default: 
+                        break;
+                }
+            }
+              
+        }
+
+        private void CB_ROTATE_CheckedChanged(object sender, EventArgs e)
+        {
+            
+            CB_SCALE.Checked = false;
+            CB_TRANSLATE.Checked = false;
+            int maximum = 360;
+            int minimum = 0;
+            int value = 0;
+            TB_Trans_X.Maximum = maximum;
+            TB_Trans_Y.Maximum = maximum;
+            TB_Trans_Z.Maximum = maximum;
+            TB_Trans_X.Minimum = minimum;
+            TB_Trans_Y.Minimum = minimum;
+            TB_Trans_Z.Minimum = minimum;
+            TB_Trans_X.Value = value;
+            TB_Trans_Y.Value = value;
+            TB_Trans_Z.Value = value;
+            TB_Trans_Y.Visible = true;
+            TB_Trans_Z.Visible = true;
+            transform = 1;
+            T_X.Text = "Rotación en X";
+            T_Y.Text = "Rotación en Y";
+            T_Z.Text = "Rotación en Z";
+
+        }
+
+        private void CB_TRANSLATE_CheckedChanged(object sender, EventArgs e)
+        {
+            CB_ROTATE.Checked = false;
+            CB_SCALE.Checked = false;
+            int maximum = 10;
+            int minimum = -10;
+            int value = 0;
+            TB_Trans_X.Maximum = maximum;
+            TB_Trans_Y.Maximum = maximum;
+            TB_Trans_Z.Maximum = maximum;
+            TB_Trans_X.Minimum = minimum;
+            TB_Trans_Y.Minimum = minimum;
+            TB_Trans_Z.Minimum = minimum;
+            TB_Trans_X.Value = value;
+            TB_Trans_Y.Value = value;
+            TB_Trans_Z.Value = value;
+            TB_Trans_Y.Visible = true;
+            TB_Trans_Z.Visible = true;
+            transform = 2;
+            T_X.Text = "Traslación en X";
+            T_Y.Text = "Traslación en Y";
+            T_Z.Text = "Traslación en Z";
+        }
+
+        private void CB_SCALE_CheckedChanged(object sender, EventArgs e)
+        {
+            CB_ROTATE.Checked = false;
+            TB_Trans_Y.Visible = false;
+            TB_Trans_Z.Visible = false;
+            CB_TRANSLATE.Checked = false;
+            TB_Trans_X.Maximum = 200;
+            TB_Trans_X.Minimum = 0;
+            TB_Trans_X.Value = 100;
+            transform = 3;
+            T_X.Text = "Escalado ";
+            T_Y.Text = "";
+            T_Z.Text = "";
+        }
+
+        private void label1_Click(object sender, EventArgs e)
+        {
+
+        }
+
+        private void label1_Click_1(object sender, EventArgs e)
+        {
+
+        }
+
+        private void trackBar1_Scroll_1(object sender, EventArgs e)
+        {
+            label1.Text = "Tiempo : " + ConvertirMilisegundosAString(trackBar1.Value * TIMER.Interval);
+        }
+        public static string ConvertirMilisegundosAString(long milisegundos)
+        {
+            int segundos = (int)(milisegundos / 1000); // Convierte a segundos
+            
+            segundos = segundos % 60; // Obtiene los segundos restantes
+            int milisegRestantes = (int)(milisegundos % 1000); // Obtiene los milisegundos restantes
+
+            string resultado =  segundos.ToString() + " segundos y " + milisegRestantes.ToString() + " milisegundos";
+
+            return resultado;
         }
     }
 }

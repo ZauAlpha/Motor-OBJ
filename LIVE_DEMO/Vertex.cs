@@ -78,6 +78,10 @@ namespace LIVE_DEMO
         {
             return new Vertex(a.y * b.z - a.z * b.y, a.z * b.x - a.x * b.z, a.x * b.y - a.y * b.x);
         }
+        public static Vertex Abs(Vertex a)
+        {
+            return new Vertex(Math.Abs(a.x), Math.Abs(a.y), Math.Abs(a.z));
+        }
 
         // Computes dot product.
         public static float operator *(Vertex v1, Vertex v2)

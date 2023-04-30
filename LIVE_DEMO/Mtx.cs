@@ -134,6 +134,18 @@ namespace LIVE_DEMO
 
             return res;
         }
+       public static Mtx operator -(Mtx m, Mtx r)
+        {
+            Mtx res = new Mtx(new float[4, 4]);
+            for(int i = 0; i < 4; i++)
+            {
+                for(int j = 0; j < 4; j++)
+                {
+                    res[i, j] = m[i, j] - r[i,j];
+                }
+            }
+            return res;
+        }
         
         public static Vertex operator *(Mtx m, Vertex v) // 3D vector
         {
@@ -148,5 +160,6 @@ namespace LIVE_DEMO
 
             return pts;
         }
+        
     }
 }

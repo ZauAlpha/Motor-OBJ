@@ -21,7 +21,7 @@ namespace LIVE_DEMO
         Graphics canvas_context;
         int canvas_width;
         int canvas_height;
-        List<Model> models;
+        public List<Model> models;
         int pixelFormatSize, stride;
         public byte[] bits;
         public float[,] zbuffer;
@@ -127,11 +127,12 @@ namespace LIVE_DEMO
 
             
         }
-        public void AddModel(List<Vertex> vertexes, List<Triangle> triangles)
+        public int AddModel(List<Vertex> vertexes, List<Triangle> triangles)
         {
             Model model = new Model(vertexes.ToArray(), triangles.ToArray(), new Vertex(0, 0, 0), (float)Math.Sqrt(3));
             models.Add(model);
             instances.Add(new Instance(model, new Vertex(0, 0, 7.5f), Mtx.RotY(0)));
+            return models.IndexOf(model);
         }
        
 
@@ -296,29 +297,30 @@ namespace LIVE_DEMO
 
         void DrawTriangle(Vertex p0, Vertex p1, Vertex p2, Color color, Camera camera)
         {
-            if (BackfaceCulling(p0, p1, p2, camera))
+            if (IsFrontFace(p0, p1, p2, camera))
             {
-
-
-                DrawLine(p0, p1, Color.Black);
-                //DrawLine(p1, p2, Color.Black);
-                //DrawLine(p0, p2, Color.Black);
+                
                 DrawBufferTriangle(p0, p1, p2, color);
-
             }
+           // DrawLine(p0, p1, Color.Black);
+           // DrawLine(p1, p2, Color.Black);
+           // DrawLine(p0, p2, Color.Black);
+
+
             //FillTriangle(p0, p1, p2, color);
-            
+
 
         }
         //create a method that uses backfacing culling to determine if a triangle is visible
-        bool BackfaceCulling(Vertex p0, Vertex p1, Vertex p2, Camera camera)
+        bool IsFrontFace(Vertex p0, Vertex p1, Vertex p2, Camera camera)
         {
             Vertex v0 = new Vertex(p1.x - p0.x, p1.y - p0.y, p1.z - p0.z);
             Vertex v1 = new Vertex(p2.x - p0.x, p2.y - p0.y, p2.z - p0.z);
             Vertex normal = Vertex.Cross(v0, v1);
-            Vertex cameraVector = camera.position - p0;
+            Vertex cameraVector =  camera.position -p0 ;
             float dot = Vertex.Dot(normal, cameraVector);
-            if (dot < 0)
+
+            if (dot >= 0)
                 return true;
             return false;
 
@@ -597,13 +599,13 @@ namespace LIVE_DEMO
             {
                 for (int j = 0; j < zbuffer.GetLength(1); j++)
                 {
-                    if (zbuffer[i,j] != float.MaxValue)
-                     Console.Write(zbuffer[i, j] + "\t");
+                    if (zbuffer[i, j] != float.MaxValue)
+                        Console.Write(zbuffer[i, j] + "\t");
                     else
-                    { Console.Write("\t");}
+                    { Console.Write("\t"); }
                 }
                 Console.WriteLine();
-                
+
             }
         }
         public void ClearZBuffer()
@@ -662,26 +664,25 @@ namespace LIVE_DEMO
             }
         }
         //make a method that scales the instances for a scale s
-        public void Scales(float scale)
+        public void Scales(float scale, int index)
         {
-            for (int i =0; i<instances.Count; i++)
-            {
-                instances[i].transform *= Mtx.MakeScalingMatrix(scale);
-            }
+            float s = scale / instances[index].scale;
+               instances[index].transform *= Mtx.MakeScalingMatrix(s);
+            instances[index].scale = scale;
+            
         }
-        public void Rotate(Vertex angle)
+        public void Rotate(Vertex angle, int index)
         {
-            for (int i =0; i < instances.Count; i++)
-            {
-                instances[i].transform *= Mtx.Rotate(angle);
-            }
+            Vertex rot = angle - instances[index].angle;
+            instances[index].transform *= Mtx.Rotate(rot);
+            instances[index].angle = angle;
         }
-        public void Translate(Vertex translation)
+        public void Translate(Vertex translation, int index)
         {
-            for (int i=0; i<instances.Count; i++)
-            {
-                instances[i].transform *= Mtx.MakeTranslationMatrix(translation);
-            }
+            Vertex tras= translation- instances[index].translation;
+             instances[index].transform *= Mtx.MakeTranslationMatrix(tras) ;
+            instances[index].translation = translation;
+
         }
         public void Inverse(List<float> numbers)
         {
@@ -708,6 +709,24 @@ namespace LIVE_DEMO
             bits[res + 2] = c.R;// (byte)Red;
             bits[res + 3] = c.A;// (byte)Alpha;
             
+        }
+        public void Animate(int frame)
+        {
+            for(int i = 0; i < instances.Count; i++)
+            {
+                Transformation transformation = instances[i].FindTransformation(frame);
+                if (transformation == null)
+                {
+                    continue;
+                }
+                else
+                {
+                    Rotate(transformation.angle, i);
+                    Translate(transformation.translation, i);
+                    Scales(transformation.scale, i);
+                }
+
+            }
         }
 
         
