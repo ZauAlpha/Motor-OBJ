@@ -8,7 +8,7 @@ namespace LIVE_DEMO
     public class Mtx
     {
         public float[,] data;
-        
+
         public float this[int x, int y]
         {
             get { return data[x, y]; }
@@ -82,7 +82,7 @@ namespace LIVE_DEMO
         {
             float cos = (float)Math.Cos(angle * Math.PI / 180.0);
             float sin = (float)Math.Sin(angle * Math.PI / 180.0);
-            
+
             return new Mtx(new float[,]{
                 {1,     0 ,  0  , 0},
                 {0,   cos ,-sin , 0},
@@ -103,9 +103,35 @@ namespace LIVE_DEMO
                 {   0,   0,    0,   1}});
         }
 
+
+
         public Mtx(float[,] data)
         {
             this.data = data;
+        }
+        public static Mtx operator /(Mtx m, float f)
+        {
+            Mtx result = new Mtx(new float[4, 4]);
+            for (int i = 0; i < 4; i++)
+            {
+                for (int j = 0; j < 4; j++)
+                {
+                    result[i, j] = m[i, j] / f;
+                }
+            }
+            return result;
+        }
+        public static Mtx operator *(Mtx m, float f)
+        {
+            Mtx result = new Mtx(new float[4, 4]);
+            for (int i = 0; i < 4; i++)
+            {
+                for (int j = 0; j < 4; j++)
+                {
+                    result[i, j] = m[i, j] * f;
+                }
+            }
+            return result;
         }
 
         public static Mtx operator *(Mtx m, Mtx r)//CAMBIAR OPERACIÓN DE MULTIPLICACIÓN
@@ -134,19 +160,31 @@ namespace LIVE_DEMO
 
             return res;
         }
-       public static Mtx operator -(Mtx m, Mtx r)
+        public static Mtx operator -(Mtx m, Mtx r)
         {
             Mtx res = new Mtx(new float[4, 4]);
-            for(int i = 0; i < 4; i++)
+            for (int i = 0; i < 4; i++)
             {
-                for(int j = 0; j < 4; j++)
+                for (int j = 0; j < 4; j++)
                 {
-                    res[i, j] = m[i, j] - r[i,j];
+                    res[i, j] = m[i, j] - r[i, j];
                 }
             }
             return res;
         }
-        
+        public static Mtx operator +(Mtx m, Mtx r)
+        {
+            Mtx res = new Mtx(new float[4, 4]);
+            for (int i = 0; i < 4; i++)
+            {
+                for (int j = 0; j < 4; j++)
+                {
+                    res[i, j] = m[i, j] + r[i, j];
+                }
+            }
+            return res;
+        }
+
         public static Vertex operator *(Mtx m, Vertex v) // 3D vector
         {
             Vertex pts;
@@ -160,6 +198,24 @@ namespace LIVE_DEMO
 
             return pts;
         }
-        
+       
+        public override string ToString()
+        {
+            string result = "";
+
+            for (int i = 0; i < 4; i++)
+            {
+                for (int j = 0; j < 4; j++)
+                {
+                    result += data[i, j].ToString("F3").PadLeft(8) + "   ";
+                }
+                result += "\n";
+            }
+
+            return result;
+        }
+
+
+
     }
 }

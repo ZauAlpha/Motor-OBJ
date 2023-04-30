@@ -17,10 +17,12 @@ namespace LIVE_DEMO
     {
         Rasterization raster;
         Random random;
-        bool rotate;
+        
         int modelIndex;
         int transform;
         bool animate;
+        int initialFrame;
+        int finalFrame;
         
         public MAIN_FORM()
         {
@@ -32,29 +34,39 @@ namespace LIVE_DEMO
             animate = !animate;
         }
 
-        private void Init()
-        {
-            
 
-        }
 
 
         private void TIMER_Tick(object sender, EventArgs e)
         {
             if (raster == null)
                 return;
+            if (animate)
+                raster.Animate(TB_TIME.Value, initialFrame);
             raster.Render();
             PCT_CANVAS.Invalidate();
-            
+            if (animate)
+            {
+                if (TB_TIME.Value==TB_TIME.Maximum)
+                    TB_TIME.Value = 0;
+                else
+                    TB_TIME.Value++;
+                label1.Text = "Tiempo : " + ConvertirMilisegundosAString(TB_TIME.Value * TIMER.Interval);
+            }
+                
+
 
         }
 
         private void MAIN_FORM_Load(object sender, EventArgs e)
         {
-            Init();
+           
             random = new Random();
             transform = 0;
             animate = false;
+            initialFrame = -1;
+            finalFrame = -1;
+            TB_TIME.Maximum=(10000/TIMER.Interval)+1;
         }
         private String formatTranslation(String text)
         {
@@ -183,7 +195,36 @@ namespace LIVE_DEMO
 
         private void button1_Click(object sender, EventArgs e)
         {
-            rotate = !rotate;
+            if (raster == null)
+                return;
+            if(initialFrame == -1)
+            {
+                initialFrame= TB_TIME.Value;
+                raster.SaveFrame(TB_TIME.Value);
+
+            }
+            else if (finalFrame == -1)
+            {
+                finalFrame= TB_TIME.Value;
+                raster.SaveFrame(TB_TIME.Value);
+                for (int i = 0; i < raster.instances.Count; i++)
+                {
+                    Instance ints = raster.instances[i];
+                    for (int j = 0; j < ints.transformations.Count; j++)
+                    {
+                        label2.Text += ints.transformations[j].ToString();
+
+                    }
+                }
+                raster.CalculateSteps(initialFrame, finalFrame);
+
+
+            }
+            else
+            {
+                Console.WriteLine("ERROR");
+            }
+            
         }
 
         private void TREE_AfterSelect(object sender, TreeViewEventArgs e)
@@ -207,7 +248,6 @@ namespace LIVE_DEMO
                     case 3:
                         float value = ((float)TB_Trans_X.Value) / 100;
                         raster.Scales(value, modelIndex);
-                        Console.WriteLine("Escalado : " + value + " | "+TB_Trans_X.Value);
                         break;
                     default: 
                         break;
@@ -293,7 +333,7 @@ namespace LIVE_DEMO
 
         private void trackBar1_Scroll_1(object sender, EventArgs e)
         {
-            label1.Text = "Tiempo : " + ConvertirMilisegundosAString(trackBar1.Value * TIMER.Interval);
+            label1.Text = "Tiempo : " + ConvertirMilisegundosAString(TB_TIME.Value * TIMER.Interval);
         }
         public static string ConvertirMilisegundosAString(long milisegundos)
         {

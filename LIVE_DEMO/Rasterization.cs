@@ -30,7 +30,7 @@ namespace LIVE_DEMO
         Camera camera   = new Camera(new Vertex(0,0, 2), Mtx.RotY(0));
        // float s2        = (float)Math.Sqrt(2);
 
-        List<Instance> instances;
+        public List<Instance> instances;
 
         public Bitmap Canvas
         {
@@ -302,12 +302,6 @@ namespace LIVE_DEMO
                 
                 DrawBufferTriangle(p0, p1, p2, color);
             }
-           // DrawLine(p0, p1, Color.Black);
-           // DrawLine(p1, p2, Color.Black);
-           // DrawLine(p0, p2, Color.Black);
-
-
-            //FillTriangle(p0, p1, p2, color);
 
 
         }
@@ -438,14 +432,7 @@ namespace LIVE_DEMO
             }
             List<float> x01 = Interpolate(p0.Y, p0.X, p1.Y, p1.X);
             List<float> h01 = Interpolate(p0.Y, (float)1/z0, p1.Y, (float)1/z1);
-            
-            //Console.Write("1/z : ");
-            //PrintList(h01);
-            //Console.Write("z : ");
-            //PrintList(z01);
-            //Console.Write("inverse 1/z : ");
-            //Inverse(h01);
-            //PrintList(h01);
+
 
             List<float> x12 = Interpolate(p1.Y, p1.X, p2.Y, p2.X);
             List<float> h12 = Interpolate(p1.Y, (float)1/z1, p2.Y,(float)1/z2);
@@ -666,13 +653,14 @@ namespace LIVE_DEMO
         //make a method that scales the instances for a scale s
         public void Scales(float scale, int index)
         {
-            float s = scale / instances[index].scale;
+            float s = scale / instances[index].scalation;
                instances[index].transform *= Mtx.MakeScalingMatrix(s);
-            instances[index].scale = scale;
+            instances[index].scalation = scale;
             
         }
         public void Rotate(Vertex angle, int index)
         {
+            
             Vertex rot = angle - instances[index].angle;
             instances[index].transform *= Mtx.Rotate(rot);
             instances[index].angle = angle;
@@ -710,25 +698,44 @@ namespace LIVE_DEMO
             bits[res + 3] = c.A;// (byte)Alpha;
             
         }
-        public void Animate(int frame)
+        public void Animate(int frame, int initialFrame)
         {
+            //Console.WriteLine(frame + "|" + initialFrame);
             for(int i = 0; i < instances.Count; i++)
             {
-                Transformation transformation = instances[i].FindTransformation(frame);
+                MtxTransform transformation = instances[i].FindTransformation(frame);
                 if (transformation == null)
                 {
                     continue;
+                }else if (frame==initialFrame) {
+                    instances[i].transform = instances[i].initialTransform;
+                    return;
                 }
                 else
                 {
-                    Rotate(transformation.angle, i);
-                    Translate(transformation.translation, i);
-                    Scales(transformation.scale, i);
+                    instances[i].transform=transformation.Mtx;
                 }
 
             }
         }
+        public void SaveFrame(int frame)
+        {
+            for (int i = 0;i < instances.Count;i++)
+            {
+                //Console.WriteLine(instances[i].transform.ToString());
+                instances[i].SaveTransformations(frame);
+            }
+            Console.WriteLine("-------------------------------------");
+        }
+        public void CalculateSteps(int initialFrame, int finalFrame)
+        {
+            
+            for (int i = 0; i < instances.Count; i++)
+                instances[i].CalculateSteps(initialFrame, finalFrame);
+        }
+       
 
-        
+
+
     }
 }

@@ -46,12 +46,13 @@
             this.CB_TRANSLATE = new System.Windows.Forms.CheckBox();
             this.CB_SCALE = new System.Windows.Forms.CheckBox();
             this.label1 = new System.Windows.Forms.Label();
-            this.trackBar1 = new System.Windows.Forms.TrackBar();
+            this.TB_TIME = new System.Windows.Forms.TrackBar();
+            this.label2 = new System.Windows.Forms.Label();
             ((System.ComponentModel.ISupportInitialize)(this.PCT_CANVAS)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.TB_Trans_X)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.TB_Trans_Y)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.TB_Trans_Z)).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)(this.trackBar1)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.TB_TIME)).BeginInit();
             this.SuspendLayout();
             // 
             // PCT_CANVAS
@@ -107,7 +108,7 @@
             this.button1.Name = "button1";
             this.button1.Size = new System.Drawing.Size(75, 23);
             this.button1.TabIndex = 19;
-            this.button1.Text = "button1";
+            this.button1.Text = "Add Frame";
             this.button1.UseVisualStyleBackColor = true;
             this.button1.Click += new System.EventHandler(this.button1_Click);
             // 
@@ -229,14 +230,23 @@
             this.label1.Text = "Tiempo";
             this.label1.Click += new System.EventHandler(this.label1_Click_1);
             // 
-            // trackBar1
+            // TB_TIME
             // 
-            this.trackBar1.Location = new System.Drawing.Point(12, 794);
-            this.trackBar1.Maximum = 100;
-            this.trackBar1.Name = "trackBar1";
-            this.trackBar1.Size = new System.Drawing.Size(1037, 45);
-            this.trackBar1.TabIndex = 30;
-            this.trackBar1.Scroll += new System.EventHandler(this.trackBar1_Scroll_1);
+            this.TB_TIME.Location = new System.Drawing.Point(12, 794);
+            this.TB_TIME.Maximum = 100;
+            this.TB_TIME.Name = "TB_TIME";
+            this.TB_TIME.Size = new System.Drawing.Size(1037, 45);
+            this.TB_TIME.TabIndex = 30;
+            this.TB_TIME.Scroll += new System.EventHandler(this.trackBar1_Scroll_1);
+            // 
+            // label2
+            // 
+            this.label2.AutoSize = true;
+            this.label2.ForeColor = System.Drawing.SystemColors.ButtonHighlight;
+            this.label2.Location = new System.Drawing.Point(1128, 498);
+            this.label2.Name = "label2";
+            this.label2.Size = new System.Drawing.Size(0, 13);
+            this.label2.TabIndex = 33;
             // 
             // MAIN_FORM
             // 
@@ -244,8 +254,9 @@
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(64)))), ((int)(((byte)(64)))), ((int)(((byte)(64)))));
             this.ClientSize = new System.Drawing.Size(1402, 887);
+            this.Controls.Add(this.label2);
             this.Controls.Add(this.label1);
-            this.Controls.Add(this.trackBar1);
+            this.Controls.Add(this.TB_TIME);
             this.Controls.Add(this.CB_SCALE);
             this.Controls.Add(this.CB_TRANSLATE);
             this.Controls.Add(this.CB_ROTATE);
@@ -267,7 +278,7 @@
             ((System.ComponentModel.ISupportInitialize)(this.TB_Trans_X)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.TB_Trans_Y)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.TB_Trans_Z)).EndInit();
-            ((System.ComponentModel.ISupportInitialize)(this.trackBar1)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.TB_TIME)).EndInit();
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -292,7 +303,8 @@
         private System.Windows.Forms.CheckBox CB_TRANSLATE;
         private System.Windows.Forms.CheckBox CB_SCALE;
         private System.Windows.Forms.Label label1;
-        private System.Windows.Forms.TrackBar trackBar1;
+        private System.Windows.Forms.TrackBar TB_TIME;
+        private System.Windows.Forms.Label label2;
     }
 }
 

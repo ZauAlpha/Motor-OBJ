@@ -107,6 +107,10 @@ namespace LIVE_DEMO
         {
             return v1.x*v2.x+v1.y*v2.y+v1.z*v2.z;
         }
+        public static Vertex Inverse(Vertex v)
+        {
+            return new Vertex(1/v.X, 1/v.Y, 1/ v.Z);
+        }
         public static Vertex operator /(Vertex v1, float a)
         {
             return new Vertex(v1.X / a, v1.Y / a, v1.Z / a);
